@@ -6,9 +6,11 @@ import stringify from 'stringify-object';
 import sortobject from 'sortobject';
 import traverse from 'traverse';
 import fill from 'lodash/array/fill';
+import pick from 'lodash/object/pick';
 
 export default function reactElementToJSXString(ReactElement, options = {}) {
   let getDisplayName = options.displayName || getDefaultDisplayName;
+  let ignoreDefaultProps = !!options.ignoreDefaultProps;
 
   return toJSXString({ReactElement});
 
@@ -21,11 +23,18 @@ export default function reactElementToJSXString(ReactElement, options = {}) {
     }
 
     let tagName = getDisplayName(Element);
+    let defaultProps = typeof ReactElement.type === 'function' && ReactElement.type.defaultProps
 
     let out = `<${tagName}`;
-    let props = formatProps(Element.props);
+    let elementProps = Element.props
+    if (ignoreDefaultProps && defaultProps) {
+      elementProps = pick(elementProps, (value, name) => {
+        return defaultProps[name] !== value
+      })
+    }
+    let props = formatProps(elementProps);
     let attributes = [];
-    let children = React.Children.toArray(Element.props.children)
+    let children = React.Children.toArray(elementProps.children)
     .filter(onlyMeaningfulChildren);
 
     if (Element.ref !== null) {
