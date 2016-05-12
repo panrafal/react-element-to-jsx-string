@@ -11,6 +11,7 @@ import pick from 'lodash/object/pick';
 export default function reactElementToJSXString(ReactElement, options = {}) {
   let getDisplayName = options.displayName || getDefaultDisplayName;
   let ignoreDefaultProps = !!options.ignoreDefaultProps;
+  let getExpression = options.expression;
 
   return toJSXString({ReactElement});
 
@@ -50,6 +51,7 @@ export default function reactElementToJSXString(ReactElement, options = {}) {
     attributes = attributes.concat(props);
 
     attributes.forEach(attribute => {
+      if (!attribute.value) return
       if (attributes.length === 1 || inline) {
         out += ` `;
       } else {
@@ -107,6 +109,18 @@ export default function reactElementToJSXString(ReactElement, options = {}) {
   }
 
   function getJSXAttribute(name, value) {
+    if (getExpression) {
+      const expression = getExpression(value, name)
+      // by returning false we can ignore props
+      if (expression === false) {
+        return {}
+      } else if (expression) {
+        return {
+          name,
+          value: `{${expression}}`
+        }
+      }
+    }
     return {
       name,
       value: formatJSXAttribute(value)
